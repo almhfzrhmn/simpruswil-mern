@@ -1,0 +1,6 @@
+backend/node_modules/
+frontend/node_modules/
+
+# Abaikan file .env di backend dan frontend
+backend/.env
+frontend/.env

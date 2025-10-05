@@ -1,0 +1,105 @@
+/* src/styles/swiper-custom.css
+
+/* Enhanced Swiper Navigation Buttons */
+.swiper-button-next,
+.swiper-button-prev {
+  color: #2563eb !important;
+  background: white !important;
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.3s ease !important;
+}
+
+.swiper-button-next:hover,
+.swiper-button-prev:hover {
+  background: #2563eb !important;
+  color: white !important;
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4) !important;
+}
+
+.swiper-button-next:after,
+.swiper-button-prev:after {
+  font-size: 18px !important;
+  font-weight: bold !important;
+}
+
+/* Pagination Dots */
+.swiper-pagination-bullet {
+  background: #2563eb !important;
+  opacity: 0.3 !important;
+  width: 10px !important;
+  height: 10px !important;
+  transition: all 0.3s ease !important;
+}
+
+.swiper-pagination-bullet-active {
+  opacity: 1 !important;
+  width: 30px !important;
+  border-radius: 5px !important;
+  background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%) !important;
+}
+
+/* Swiper Container */
+.room-swiper {
+  padding: 40px 10px 60px 10px !important;
+  overflow: hidden !important;
+}
+
+/* Slide Custom Styling */
+.swiper-slide {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  opacity: 0.6;
+}
+
+.swiper-slide-active {
+  opacity: 1 !important;
+  z-index: 10 !important;
+}
+
+.swiper-slide-next,
+.swiper-slide-prev {
+  opacity: 0.8;
+}
+
+/* Coverflow Shadow Enhancement */
+.swiper-slide-shadow-left,
+.swiper-slide-shadow-right {
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.5), transparent) !important;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 640px) {
+  .swiper-button-next,
+  .swiper-button-prev {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .swiper-button-next:after,
+  .swiper-button-prev:after {
+    font-size: 14px !important;
+  }
+
+  .room-swiper {
+    padding: 30px 5px 50px 5px !important;
+  }
+}
+
+/* Loading Animation for Images */
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+.image-loading {
+  animation: shimmer 1.2s ease-in-out infinite;
+  background: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
+  background-size: 800px 104px;
+} */
