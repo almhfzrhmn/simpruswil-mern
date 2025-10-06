@@ -2,6 +2,12 @@
 const express = require('express');
 const LibraryTour = require('../models/LibraryTour');
 const { protect, authorize } = require('../middleware/auth');
+const {
+  uploadDocument,
+  handleUploadError,
+  generateFileUrl,
+  deleteFile
+} = require('../middleware/upload');
 const { sendTourNotification } = require('../utils/email');
 
 const router = express.Router();
@@ -9,7 +15,7 @@ const router = express.Router();
 // @desc    Create new tour request
 // @route   POST /api/tours
 // @access  Private
-router.post('/', protect, async (req, res) => {
+router.post('/', protect, uploadDocument, handleUploadError, generateFileUrl, async (req, res) => {
   try {
     const {
       groupName,
@@ -76,10 +82,10 @@ router.post('/', protect, async (req, res) => {
 
     // Validate participants count
     const participantsCount = parseInt(numberOfParticipants);
-    if (participantsCount < 1 || participantsCount > 100) {
+    if (participantsCount < 1) {
       return res.status(400).json({
         success: false,
-        message: 'Jumlah peserta harus antara 1-100 orang'
+        message: 'Jumlah peserta minimal 1 orang'
       });
     }
 
@@ -125,7 +131,8 @@ router.post('/', protect, async (req, res) => {
       contactPerson: parsedContactPerson,
       specialRequests: specialRequests ? specialRequests.trim() : undefined,
       ageGroup,
-      language
+      language,
+      documentPath: req.file ? req.file.path : undefined
     };
 
     const tour = await LibraryTour.create(tourData);
@@ -136,7 +143,10 @@ router.post('/', protect, async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Pengajuan tur perpustakaan berhasil diajukan. Menunggu persetujuan admin.',
-      data: tour
+      data: {
+        ...tour.toObject(),
+        documentUrl: req.file ? `${req.protocol}://${req.get('host')}/${tour.documentPath}` : null
+      }
     });
 
   } catch (error) {
@@ -387,7 +397,7 @@ router.get('/:id', protect, async (req, res) => {
 // @desc    Update tour (only before approval and by owner)
 // @route   PUT /api/tours/:id
 // @access  Private
-router.put('/:id', protect, async (req, res) => {
+router.put('/:id', protect, uploadDocument, handleUploadError, generateFileUrl, async (req, res) => {
   try {
     const tour = await LibraryTour.findById(req.params.id);
 
@@ -457,6 +467,17 @@ router.put('/:id', protect, async (req, res) => {
           message: 'Format data penanggung jawab tidak valid'
         });
       }
+    }
+
+    // Handle document update
+    if (req.file) {
+      // Delete old document
+      if (tour.documentPath) {
+        deleteFile(tour.documentPath).catch(err =>
+          console.error('Error deleting old document:', err)
+        );
+      }
+      updateData.documentPath = req.file.path;
     }
 
     // Handle date/time updates
@@ -707,6 +728,7 @@ router.get('/', protect, authorize('admin'), async (req, res) => {
         ageGroup: 1,
         language: 1,
         assignedGuide: 1,
+        documentPath: 1,
         createdAt: 1,
         updatedAt: 1,
         userId: {
@@ -735,16 +757,42 @@ router.get('/', protect, authorize('admin'), async (req, res) => {
     // Execute aggregation
     const tours = await LibraryTour.aggregate(pipeline);
 
+    console.log('Raw aggregation results count:', tours.length);
+    if (tours.length > 0) {
+      console.log('First tour documentPath:', tours[0].documentPath);
+      console.log('First tour keys:', Object.keys(tours[0]));
+    }
+
+    // Add document URLs to tours
+    const toursWithUrls = tours.map(tour => ({
+      ...tour,
+      documentUrl: tour.documentPath ? `${req.protocol}://${req.get('host')}/${tour.documentPath}` : null,
+      // Ensure documentPath is preserved for download functionality
+      documentPath: tour.documentPath || null
+    }));
+
+    console.log('Processed tours count:', toursWithUrls.length);
+    const toursWithDocs = toursWithUrls.filter(t => t.documentUrl);
+    console.log('Tours with documentUrl after processing:', toursWithDocs.length);
+    if (toursWithDocs.length > 0) {
+      console.log('Sample processed tour:', {
+        id: toursWithDocs[0]._id,
+        groupName: toursWithDocs[0].groupName,
+        documentPath: toursWithDocs[0].documentPath,
+        documentUrl: toursWithDocs[0].documentUrl
+      });
+    }
+
     res.status(200).json({
       success: true,
-      count: tours.length,
+      count: toursWithUrls.length,
       pagination: {
         page: pageNumber,
         limit: pageSize,
         total,
         pages: Math.ceil(total / pageSize)
       },
-      data: tours
+      data: toursWithUrls
     });
 
   } catch (error) {
@@ -1037,6 +1085,60 @@ router.get('/admin/upcoming', protect, authorize('admin'), async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error saat mengambil tur mendatang'
+    });
+  }
+});
+
+// @desc    Delete tour (only cancelled or rejected by owner)
+// @route   DELETE /api/tours/:id
+// @access  Private
+router.delete('/:id', protect, async (req, res) => {
+  try {
+    const tour = await LibraryTour.findById(req.params.id);
+
+    if (!tour) {
+      return res.status(404).json({
+        success: false,
+        message: 'Tur tidak ditemukan'
+      });
+    }
+
+    // Check ownership
+    if (tour.userId._id.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Tidak memiliki akses untuk menghapus tur ini'
+      });
+    }
+
+    // Check if tour can be deleted (only cancelled, rejected, or completed)
+    if (!['cancelled', 'rejected', 'completed'].includes(tour.status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Hanya tur yang dibatalkan, ditolak, atau sudah selesai yang dapat dihapus'
+      });
+    }
+
+    // Delete associated document file if exists
+    if (tour.documentPath) {
+      deleteFile(tour.documentPath).catch(err =>
+        console.error('Error deleting document file:', err)
+      );
+    }
+
+    // Delete the tour
+    await LibraryTour.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Tur berhasil dihapus'
+    });
+
+  } catch (error) {
+    console.error('Delete tour error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error saat menghapus tur'
     });
   }
 });

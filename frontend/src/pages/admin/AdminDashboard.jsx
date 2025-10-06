@@ -1278,6 +1278,42 @@ function AdminDashboard() {
         </div>
       )}
 
+      {/* Most Active Institutions */}
+      {statsData.institutionStats && statsData.institutionStats.length > 0 && (
+        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50 shadow-2xl animate-fade-in" style={{ animationDelay: '1000ms' }}>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-emerald-500/20 rounded-lg">
+              <BuildingOfficeIcon className="h-6 w-6 text-white" />
+            </div>
+            <h3 className="text-xl font-bold text-white">Institusi Teraktif</h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {statsData.institutionStats.slice(0, 6).map((institution, index) => (
+              <div key={index} className="bg-gradient-to-br from-slate-700/50 to-slate-800/50 p-4 rounded-xl border border-slate-600/50 hover:border-emerald-500/50 transition-all duration-300 transform hover:scale-105">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                      <span className="text-emerald-400 font-bold">#{index + 1}</span>
+                    </div>
+                    <div>
+                      <div className="text-white font-medium text-sm">{institution.institution}</div>
+                      <div className="text-slate-400 text-xs">{institution.userCount} pengguna</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="text-emerald-400 font-bold">{institution.totalActivity} aktivitas</div>
+                  <div className="text-xs text-slate-300">
+                    {institution.bookingCount} booking, {institution.tourCount} tur
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Additional Activity Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
       </div>

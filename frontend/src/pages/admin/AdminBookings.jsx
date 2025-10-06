@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { bookingsAPI, downloadFile } from "../../services/api";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import AdminNotesModal from "../../components/ui/AdminNotesModal";
 import toast from "react-hot-toast";
 import {
   EyeIcon,
@@ -56,6 +57,10 @@ function AdminBookings() {
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [actionLoading, setActionLoading] = useState(false);
     const [statsData, setStatsData] = useState(null);
+
+    // Admin notes modal state
+    const [showNotesModal, setShowNotesModal] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null); // { id, status, itemName }
 
     // Search, filter, and sort states
     const [searchTerm, setSearchTerm] = useState("");
@@ -169,14 +174,34 @@ function AdminBookings() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [totalPages]);
 
-    const handleStatusChange = async (id, status) => {
+    const handleStatusChange = (id, status) => {
+        const booking = bookings.find(b => b._id === id);
+        if (!booking) return;
+
+        setPendingAction({
+            id,
+            status,
+            itemName: `${booking.activityName} - ${booking.userId?.name || 'User'}`,
+            itemType: 'booking'
+        });
+        setShowNotesModal(true);
+    };
+
+    const handleConfirmStatusChange = async (adminNote) => {
+        if (!pendingAction) return;
+
         setActionLoading(true);
         try {
-            await bookingsAPI.updateBookingStatus(id, { status });
-            setBookings(bookings => bookings.map(b => b._id === id ? { ...b, status } : b));
+            await bookingsAPI.updateBookingStatus(pendingAction.id, {
+                status: pendingAction.status,
+                adminNote
+            });
+            setBookings(bookings => bookings.map(b =>
+                b._id === pendingAction.id ? { ...b, status: pendingAction.status } : b
+            ));
 
             let successMessage = '';
-            switch (status) {
+            switch (pendingAction.status) {
                 case 'approved':
                     successMessage = 'Booking berhasil disetujui';
                     break;
@@ -194,6 +219,7 @@ function AdminBookings() {
             toast.error(error.response?.data?.message || 'Gagal mengupdate status booking');
         } finally {
             setActionLoading(false);
+            setPendingAction(null);
         }
     };
 
@@ -723,6 +749,17 @@ function AdminBookings() {
                     </div>
                 </div>
             )}
+
+            {/* Admin Notes Modal */}
+            <AdminNotesModal
+                isOpen={showNotesModal}
+                onClose={() => setShowNotesModal(false)}
+                onConfirm={handleConfirmStatusChange}
+                title="Catatan Admin"
+                itemType={pendingAction?.itemType}
+                itemName={pendingAction?.itemName}
+                actionType={pendingAction?.status}
+            />
         </div>
     );
 }

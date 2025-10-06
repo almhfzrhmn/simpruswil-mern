@@ -46,6 +46,8 @@ const ToursPage = () => {
     language: 'indonesia'
   });
 
+  const [documentFile, setDocumentFile] = useState(null);
+
   const loadAvailableSlots = useCallback(async (date) => {
     if (!date) return;
 
@@ -105,8 +107,8 @@ const ToursPage = () => {
       return;
     }
 
-    if (parseInt(tourForm.numberOfParticipants) < 1 || parseInt(tourForm.numberOfParticipants) > 100) {
-      toast.error("Jumlah peserta harus antara 1-100 orang");
+    if (parseInt(tourForm.numberOfParticipants) < 1) {
+      toast.error("Jumlah peserta minimal 1 orang");
       return;
     }
 
@@ -118,11 +120,18 @@ const ToursPage = () => {
       return;
     }
 
-    const formData = {
-      ...tourForm,
-      startTime: tourForm.startTime,
-      contactPerson: tourForm.contactPerson
-    };
+    const formData = new FormData();
+    Object.keys(tourForm).forEach(key => {
+      if (key === 'contactPerson') {
+        formData.append(key, JSON.stringify(tourForm[key]));
+      } else {
+        formData.append(key, tourForm[key]);
+      }
+    });
+
+    if (documentFile) {
+      formData.append('document', documentFile);
+    }
 
     try {
       await toursAPI.createTour(formData);
@@ -145,6 +154,7 @@ const ToursPage = () => {
         ageGroup: 'mixed',
         language: 'indonesia'
       });
+      setDocumentFile(null);
       setShowBookingModal(false);
       setSelectedDate(null);
       setAvailableSlots([]);
@@ -344,9 +354,9 @@ const ToursPage = () => {
               <div className="bg-blue-50 p-6 rounded-xl border border-blue-200">
                 <div className="flex items-center mb-3">
                   <UsersIcon className="h-6 w-6 text-blue-600 mr-3" />
-                  <h4 className="font-semibold text-blue-900">Grup Maksimal</h4>
+                  <h4 className="font-semibold text-blue-900">Kapasitas Fleksibel</h4>
                 </div>
-                <p className="text-blue-700">Maksimal 100 orang per sesi tur</p>
+                <p className="text-blue-700">Dapat menampung berbagai ukuran grup</p>
               </div>
 
               <div className="bg-green-50 p-6 rounded-xl border border-green-200">
@@ -425,11 +435,10 @@ const ToursPage = () => {
                     <input
                       type="number"
                       min="1"
-                      max="100"
                       value={tourForm.numberOfParticipants}
                       onChange={(e) => setTourForm({...tourForm, numberOfParticipants: e.target.value})}
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all text-gray-900"
-                      placeholder="1-100"
+                      placeholder="Jumlah peserta"
                       required
                     />
                   </div>
@@ -539,6 +548,21 @@ const ToursPage = () => {
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all resize-none text-gray-900"
                       placeholder="Jelaskan kebutuhan khusus atau fokus tur yang diinginkan..."
                     />
+                  </div>
+
+                  <div className="mt-4">
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Dokumen Persyaratan (Opsional)
+                    </label>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                      onChange={(e) => setDocumentFile(e.target.files[0])}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    />
+                    <p className="mt-2 text-sm text-gray-500">
+                      Upload dokumen persyaratan (PDF, DOC, DOCX, JPG, PNG) maksimal 5MB
+                    </p>
                   </div>
                 </div>
 

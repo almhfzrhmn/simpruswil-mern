@@ -188,6 +188,11 @@ const MyBookingsPage = () => {
         icon: ExclamationTriangleIcon,
         class: 'bg-gray-100 text-gray-800 border-gray-200',
         text: 'Dibatalkan'
+      },
+      completed: {
+        icon: CheckCircleIcon,
+        class: 'bg-blue-100 text-blue-800 border-blue-200',
+        text: 'Selesai'
       }
     };
 
@@ -277,6 +282,7 @@ const MyBookingsPage = () => {
               <option value="approved">Disetujui</option>
               <option value="rejected">Ditolak</option>
               <option value="cancelled">Dibatalkan</option>
+              <option value="completed">Selesai</option>
             </select>
           </div>
           <Link
@@ -395,7 +401,7 @@ const MyBookingsPage = () => {
                             </button>
                           </>
                         )}
-                        {(booking.status === 'cancelled' || booking.status === 'rejected') && (
+                        {(booking.status === 'cancelled' || booking.status === 'rejected' || booking.status === 'completed') && (
                           <button
                             onClick={() => handleDeleteBooking(booking._id)}
                             disabled={submitting}

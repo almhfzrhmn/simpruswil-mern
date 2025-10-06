@@ -15,8 +15,7 @@ const libraryTourSchema = new mongoose.Schema({
   numberOfParticipants: {
     type: Number,
     required: [true, 'Jumlah peserta harus diisi'],
-    min: [1, 'Jumlah peserta minimal 1 orang'],
-    // max: [100, 'Jumlah peserta maksimal 100 orang per sesi']
+    min: [1, 'Jumlah peserta minimal 1 orang']
   },
   tourDate: {
     type: Date,
@@ -40,6 +39,16 @@ const libraryTourSchema = new mongoose.Schema({
     trim: true,
     maxlength: [500, 'Catatan admin tidak boleh lebih dari 500 karakter'],
     default: null
+  },
+  documentPath: {
+    type: String,
+    required: false,
+    validate: {
+      validator: function(v) {
+        return !v || v.length > 0; // Allow empty/null values
+      },
+      message: 'Path dokumen tidak valid'
+    }
   },
   // Additional tour details
   tourType: {

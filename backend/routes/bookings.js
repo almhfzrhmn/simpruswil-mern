@@ -569,11 +569,11 @@ router.delete('/:id', protect, async (req, res) => {
       });
     }
 
-    // Check if booking can be deleted (only cancelled or rejected)
-    if (!['cancelled', 'rejected'].includes(booking.status)) {
+    // Check if booking can be deleted (cancelled, rejected, or completed)
+    if (!['cancelled', 'rejected', 'completed'].includes(booking.status)) {
       return res.status(400).json({
         success: false,
-        message: 'Hanya booking yang dibatalkan atau ditolak yang dapat dihapus'
+        message: 'Hanya booking yang dibatalkan, ditolak, atau sudah selesai yang dapat dihapus'
       });
     }
 
@@ -840,6 +840,12 @@ router.patch('/:id/status', protect, authorize('admin'), async (req, res) => {
 
     // Update booking status
     await booking.updateStatus(status, adminNote || '', req.user._id);
+
+    // Populate booking with user and room data for email notification
+    await booking.populate([
+      { path: 'userId', select: 'name email' },
+      { path: 'roomId', select: 'roomName' }
+    ]);
 
     // Send notification email
     try {

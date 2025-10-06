@@ -100,11 +100,16 @@ const MyToursPage = () => {
   };
 
   const handleEditTour = (tour) => {
+    const startTimeDate = new Date(tour.startTime);
+    const hours = startTimeDate.getHours().toString().padStart(2, '0');
+    const minutes = startTimeDate.getMinutes().toString().padStart(2, '0');
+    const startTimeString = `${hours}:${minutes}`;
+
     setEditForm({
       groupName: tour.groupName,
       numberOfParticipants: tour.numberOfParticipants,
       tourDate: new Date(tour.tourDate),
-      startTime: new Date(tour.startTime).toTimeString().substring(0, 5),
+      startTime: startTimeString,
       tourType: tour.tourType,
       duration: tour.duration,
       contactPerson: {
@@ -135,9 +140,12 @@ const MyToursPage = () => {
       return;
     }
 
-    // Combine date and time
-    const startDateTime = new Date(`${editForm.tourDate.toISOString().split('T')[0]}T${editForm.startTime}`);
+    // Combine date and time properly
+    const [hours, minutes] = editForm.startTime.split(':').map(Number);
+    const startDateTime = new Date(editForm.tourDate);
+    startDateTime.setHours(hours, minutes, 0, 0);
 
+    // Check if the combined datetime is in the past
     if (startDateTime < new Date()) {
       toast.error("Tidak dapat mengatur waktu untuk masa lalu");
       return;
@@ -145,6 +153,7 @@ const MyToursPage = () => {
 
     const formData = {
       ...editForm,
+      tourDate: editForm.tourDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
       startTime: editForm.startTime,
       contactPerson: editForm.contactPerson
     };
@@ -412,7 +421,7 @@ const MyToursPage = () => {
                           </>
                         )}
 
-                        {(tour.status === 'cancelled' || tour.status === 'rejected') && (
+                        {(tour.status === 'cancelled' || tour.status === 'rejected' || tour.status === 'completed') && (
                           <button
                             onClick={() => handleDeleteTour(tour._id)}
                             disabled={submitting}
@@ -509,7 +518,7 @@ const MyToursPage = () => {
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <label className="text-sm font-medium text-gray-500">Nama Grup</label>
-                    <p className="text-lg font-semibold text-gray-900 mt-1">{selectedTour.groupName}</p>
+                    <p className="text-lg font-semibold text-gray-900 mt-1 focus:text-gray-800">{selectedTour.groupName}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Jumlah Peserta</label>
@@ -656,7 +665,7 @@ const MyToursPage = () => {
                       type="text"
                       value={editForm.groupName}
                       onChange={(e) => setEditForm({...editForm, groupName: e.target.value})}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all focus:text-gray-800 text-gray-800"
                       placeholder="Masukkan nama grup Anda"
                       required
                     />
@@ -672,7 +681,7 @@ const MyToursPage = () => {
                       max="100"
                       value={editForm.numberOfParticipants}
                       onChange={(e) => setEditForm({...editForm, numberOfParticipants: e.target.value})}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all focus:text-gray-800 text-gray-800"
                       placeholder="1-100"
                       required
                     />
@@ -704,7 +713,7 @@ const MyToursPage = () => {
                       type="time"
                       value={editForm.startTime}
                       onChange={(e) => setEditForm({...editForm, startTime: e.target.value})}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all focus:text-gray-800 text-gray-800"
                       required
                     />
                   </div>
@@ -718,7 +727,7 @@ const MyToursPage = () => {
                     <select
                       value={editForm.tourType}
                       onChange={(e) => setEditForm({...editForm, tourType: e.target.value})}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all bg-white"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all bg-white text-gray-800 focus:text-gray-800"
                     >
                       <option value="general">Tur Umum</option>
                       <option value="academic">Tur Akademik</option>
@@ -734,7 +743,7 @@ const MyToursPage = () => {
                     <select
                       value={editForm.duration}
                       onChange={(e) => setEditForm({...editForm, duration: parseInt(e.target.value)})}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all bg-white"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all bg-white text-gray-800 focus:text-gray-800"
                     >
                       <option value={30}>30 menit</option>
                       <option value={60}>60 menit</option>
@@ -760,7 +769,7 @@ const MyToursPage = () => {
                           ...editForm,
                           contactPerson: {...editForm.contactPerson, name: e.target.value}
                         })}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all text-gray-800 focus:text-gray-800"
                         placeholder="Nama penanggung jawab"
                         required
                       />
@@ -777,7 +786,7 @@ const MyToursPage = () => {
                           ...editForm,
                           contactPerson: {...editForm.contactPerson, phone: e.target.value}
                         })}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all text-gray-800 focus:text-gray-800"
                         placeholder="08xxxxxxxxxx"
                         required
                       />
@@ -795,7 +804,7 @@ const MyToursPage = () => {
                         ...editForm,
                         contactPerson: {...editForm.contactPerson, email: e.target.value}
                       })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all text-gray-800 focus:text-gray-800"
                       placeholder="email@example.com"
                     />
                   </div>
@@ -812,7 +821,7 @@ const MyToursPage = () => {
                       <select
                         value={editForm.ageGroup}
                         onChange={(e) => setEditForm({...editForm, ageGroup: e.target.value})}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all bg-white"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all bg-white text-gray-800 focus:text-gray-800"
                       >
                         <option value="children">Anak-anak</option>
                         <option value="teenagers">Remaja</option>
@@ -829,7 +838,7 @@ const MyToursPage = () => {
                       <select
                         value={editForm.language}
                         onChange={(e) => setEditForm({...editForm, language: e.target.value})}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all bg-white"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all bg-white text-gray-800 focus:text-gray-800"
                       >
                         <option value="indonesia">Bahasa Indonesia</option>
                         <option value="english">Bahasa Inggris</option>
@@ -846,7 +855,7 @@ const MyToursPage = () => {
                       rows={4}
                       value={editForm.specialRequests}
                       onChange={(e) => setEditForm({...editForm, specialRequests: e.target.value})}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all resize-none"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all resize-none focus:text-gray-800 text-gray-800"
                       placeholder="Jelaskan kebutuhan khusus atau fokus tur yang diinginkan..."
                     />
                   </div>
@@ -863,7 +872,7 @@ const MyToursPage = () => {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all font-semibold shadow-lg hover:shadow-xl disabled:opacity-50"
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all font-semibold shadow-lg hover:shadow-xl disabled:opacity-50 cursor-pointer"
                   >
                     {submitting ? 'Menyimpan...' : 'Simpan Perubahan'}
                   </button>

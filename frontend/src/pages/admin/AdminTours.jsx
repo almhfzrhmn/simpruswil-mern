@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { toursAPI } from "../../services/api";
+import { toursAPI, downloadFile } from "../../services/api";
 import toast from "react-hot-toast";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -26,8 +26,11 @@ import {
   EnvelopeIcon,
   UserIcon,
   MapPinIcon,
+  DocumentIcon,
+  ArrowDownTrayIcon,
 } from "@heroicons/react/24/outline";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import AdminNotesModal from "../../components/ui/AdminNotesModal";
 
 const AdminTours = () => {
   const [tours, setTours] = useState([]);
@@ -53,6 +56,10 @@ const AdminTours = () => {
 
   // Assign guide form
   const [assignedGuide, setAssignedGuide] = useState("");
+
+  // Admin notes modal state
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // { id, status, itemName }
 
   // Debounce search term
   useEffect(() => {
@@ -83,6 +90,15 @@ const AdminTours = () => {
       Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
 
       const response = await toursAPI.getAllTours(params);
+      console.log('Tours API Response:', response.data.data);
+
+      // Check if any tour has document data
+      const toursWithDocs = response.data.data.filter(t => t.documentUrl);
+      console.log('Tours with documents:', toursWithDocs.length);
+      if (toursWithDocs.length > 0) {
+        console.log('Sample tour with document:', toursWithDocs[0]);
+      }
+
       setTours(response.data.data);
       setCurrentPage(response.data.pagination.page);
       setTotalPages(response.data.pagination.pages);
@@ -114,17 +130,38 @@ const AdminTours = () => {
     }
   }, [currentPage, loadTours]);
 
-  const handleStatusChange = async (tourId, status, adminNote = "") => {
+  const handleStatusChange = (tourId, status) => {
+    const tour = tours.find(t => t._id === tourId);
+    if (!tour) return;
+
+    setPendingAction({
+      id: tourId,
+      status,
+      itemName: `${tour.groupName} - ${tour.userId?.name || 'User'}`,
+      itemType: 'tour'
+    });
+    setShowNotesModal(true);
+  };
+
+  const handleConfirmStatusChange = async (adminNote) => {
+    if (!pendingAction) return;
+
     setSubmitting(true);
     try {
-      await toursAPI.updateTourStatus(tourId, { status, adminNote });
-      setTours(tours => tours.map(t => t._id === tourId ? { ...t, status } : t));
-      toast.success(`Tur berhasil ${status === 'approved' ? 'disetujui' : status === 'rejected'? 'ditolak' : 'ditandai selesai'}`);
+      await toursAPI.updateTourStatus(pendingAction.id, {
+        status: pendingAction.status,
+        adminNote
+      });
+      setTours(tours => tours.map(t =>
+        t._id === pendingAction.id ? { ...t, status: pendingAction.status } : t
+      ));
+      toast.success(`Tur berhasil ${pendingAction.status === 'approved' ? 'disetujui' : pendingAction.status === 'rejected' ? 'ditolak' : 'ditandai selesai'}`);
       loadStats(); // Refresh stats
     } catch (error) {
       toast.error(error.response?.data?.message || "Gagal mengubah status tur");
     } finally {
       setSubmitting(false);
+      setPendingAction(null);
     }
   };
 
@@ -456,6 +493,9 @@ const AdminTours = () => {
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => {
+                              console.log('Selected tour:', tour);
+                              console.log('Tour documentUrl:', tour.documentUrl);
+                              console.log('Tour documentPath:', tour.documentPath);
                               setSelectedTour(tour);
                               setShowDetailModal(true);
                             }}
@@ -487,14 +527,28 @@ const AdminTours = () => {
                           )}
 
                           {tour.status === 'approved' && (
-                            <button
-                              onClick={() => handleStatusChange(tour._id, 'completed')}
-                              disabled={submitting}
-                              className="text-blue-500 hover:text-blue-900 p-2 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50"
-                              title="Tandai Selesai"
-                            >
-                              <CheckCircleIcon className="h-4 w-4"/>
-                            </button>
+                            <>
+                              <button
+                                onClick={() => {
+                                  setSelectedTour(tour);
+                                  setAssignedGuide(tour.assignedGuide || '');
+                                  setShowAssignGuideModal(true);
+                                }}
+                                disabled={submitting}
+                                className="text-purple-600 hover:text-purple-900 p-2 rounded-lg hover:bg-purple-50 transition-colors disabled:opacity-50"
+                                title="Tetapkan Pemandu"
+                              >
+                                <UserIcon className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleStatusChange(tour._id, 'completed')}
+                                disabled={submitting}
+                                className="text-blue-500 hover:text-blue-900 p-2 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50"
+                                title="Tandai Selesai"
+                              >
+                                <CheckCircleIcon className="h-4 w-4"/>
+                              </button>
+                            </>
                           )}
                           <button
                            onClick={() => handleDeleteTour(tour._id,)}
@@ -598,6 +652,41 @@ const AdminTours = () => {
                   {getStatusText(selectedTour.status)}
                 </p>
               </div>
+              {(() => {
+                console.log('In modal, selectedTour:', selectedTour);
+                console.log('documentUrl:', selectedTour?.documentUrl);
+                console.log('documentPath:', selectedTour?.documentPath);
+                return null;
+              })()}
+              {selectedTour.documentUrl && (
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Dokumen Persyaratan:</span>
+                  <div className="mt-2 flex items-center space-x-2">
+                    <DocumentIcon className="h-5 w-5 text-gray-400" />
+                    <button
+                      onClick={() => window.open(selectedTour.documentUrl, '_blank')}
+                      className="text-sm text-blue-600 hover:text-blue-800 cursor-pointer"
+                    >
+                      Lihat Dokumen
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const filename = selectedTour.documentPath.split('/').pop();
+                          await downloadFile(selectedTour.documentUrl, filename);
+                          toast.success('Dokumen berhasil diunduh');
+                        } catch {
+                          toast.error('Gagal mengunduh dokumen');
+                        }
+                      }}
+                      className="p-1 text-gray-400 hover:text-gray-600"
+                      title="Unduh Dokumen"
+                    >
+                      <ArrowDownTrayIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="mt-6 flex justify-end space-x-3">
@@ -696,6 +785,17 @@ const AdminTours = () => {
           </div>
         </div>
       )}
+
+      {/* Admin Notes Modal */}
+      <AdminNotesModal
+        isOpen={showNotesModal}
+        onClose={() => setShowNotesModal(false)}
+        onConfirm={handleConfirmStatusChange}
+        title="Catatan Admin"
+        itemType={pendingAction?.itemType}
+        itemName={pendingAction?.itemName}
+        actionType={pendingAction?.status}
+      />
     </div>
   );
 };

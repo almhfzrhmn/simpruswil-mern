@@ -369,8 +369,8 @@ const LandingPage = () => {
               </h1>
               <p className="text-lg md:text-xl font-medium text-center text-gray-700 leading-normal">
                 <SplitText
-                  text="Sistem Informasi Peminjaman Ruangan Pustaka Wilayah"
-                  className="text-xl font-semibold text-center leading-normal"
+                  text="Sistem Informasi Peminjaman Ruang Pustaka Wilayah"
+                  className="text-xl font-bold text-center leading-normal text-black"
                   delay={50}
                   duration={0.2}
                   ease="power3.out"
@@ -576,7 +576,7 @@ const LandingPage = () => {
                   </div>
                 )}
                 <div className="relative z-10">
-                  <div className="w-20 h-20 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-6 font-bold text-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110">
+                  <div className="w-20 h-20 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-4xl flex items-center justify-center mx-auto mb-6 font-bold text-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110">
                     {step.step}
                   </div>
                   <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center mx-auto mb-6 hover:scale-110 transition-transform duration-300">
@@ -602,9 +602,6 @@ const LandingPage = () => {
       >
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20">
-            <span className="inline-block px-4 py-2 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold mb-6">
-              ❓ FAQ
-            </span>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
               Pertanyaan Yang Sering
               <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent block leading-normal">
