@@ -21,7 +21,7 @@ createUploadDirs();
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     let uploadPath = 'uploads/';
-    
+
     // Determine upload path based on file type or route
     if (req.route.path.includes('document') || file.fieldname === 'document') {
       uploadPath += 'documents/';
@@ -30,7 +30,13 @@ const storage = multer.diskStorage({
     } else {
       uploadPath += 'temp/';
     }
-    
+
+    // Ensure directory exists
+    const fs = require('fs');
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {

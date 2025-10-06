@@ -18,6 +18,9 @@ dotenv.config();
 
 const app = express();
 
+// Trust proxy for Railway
+app.set('trust proxy', 1);
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -40,36 +43,68 @@ const authLimiter = rateLimit({
   },
 });
 
+// CORS configuration - Allow all origins for now to fix the issue
+const corsOptions = {
+  origin: true, // Allow all origins
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
+};
+
 // Middleware
 app.use(compression()); // Enable gzip compression
-app.use(cors());
+app.use(cors(corsOptions));
+
+// Add explicit CORS headers for all routes
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'true');
+
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+    return;
+  }
+
+  next();
+});
+
 app.use(express.json({ limit: '10mb' })); // Limit payload size
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Apply rate limiting
-app.use('/api/', limiter);
-app.use('/api/auth/', authLimiter);
+app.use('/', limiter);
+app.use('/auth/', authLimiter);
 
 // Serve uploaded files statically with caching
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+const uploadsPath = path.join(__dirname, 'uploads');
+app.use('/uploads', express.static(uploadsPath, {
   maxAge: '1d', // Cache for 1 day
   etag: true
 }));
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/rooms', roomRoutes);
-app.use('/api/bookings', bookingRoutes);
-app.use('/api/tours', tourRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/auth', authRoutes);
+app.use('/rooms', roomRoutes);
+app.use('/bookings', bookingRoutes);
+app.use('/tours', tourRoutes);
+app.use('/admin', adminRoutes);
 
 // Test route
-app.get('/api/test', (req, res) => {
+app.get('/test', (req, res) => {
   res.json({ message: 'PerpusBooking API is working!' });
+});
+app.get('/', (req, res)=> {
+  res.json({success: true, message: 'welcome to the API'});
 });
 
 // MongoDB connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/perpusbooking')
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/perpusbooking', {
+  serverSelectionTimeoutMS: 10000,
+  socketTimeoutMS: 45000,
+})
 .then(() => {
   console.log('Connected to MongoDB');
 })
@@ -89,9 +124,10 @@ app.use((err, req, res, next) => {
 
 // Handle 404
 app.use('*', (req, res) => {
-  res.status(404).json({ 
-    success: false, 
-    message: 'Route not found' 
+  res.status(404).json({
+    success: false,
+    message: 'Route not found',
+    path: req.originalUrl
   });
 });
 

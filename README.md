@@ -79,6 +79,7 @@ git commit -m "Initial commit"
      EMAIL_USER = your_email@gmail.com
      EMAIL_PASS = your_app_password
      CLIENT_URL = https://your-frontend-domain.vercel.app
+     # Example: https://simpruswil-frontend-pjhkafdxf.vercel.app
      MAX_FILE_SIZE = 5000000
      ```
    - Klik "Deploy"
@@ -102,6 +103,14 @@ git commit -m "Initial commit"
    - **Environment Variables**:
      ```
      VITE_API_URL = https://your-backend-url.vercel.app/api
+     ```
+     **ATAU** gunakan konfigurasi di `vercel.json` (sudah diset otomatis):
+     ```json
+     {
+       "env": {
+         "VITE_API_URL": "https://your-backend-url.vercel.app/api"
+       }
+     }
      ```
    - Klik "Deploy"
 

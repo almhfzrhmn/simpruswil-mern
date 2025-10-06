@@ -1234,7 +1234,7 @@ function AdminDashboard() {
 
       {/* Upcoming Activities */}
       {(dashboardData?.upcomingActivities?.bookings?.length > 0 || dashboardData?.upcomingActivities?.tours?.length > 0) && (
-        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50 shadow-2xl animate-fade-in" style={{ animationDelay: '900ms' }}>
+        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50 shadow-2xl animate-fade-in mb-6" style={{ animationDelay: '900ms' }}>
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-purple-500/20 rounded-lg">
               <ClockIcon className="h-6 w-6 text-white" />
@@ -1395,4 +1395,3 @@ function AdminDashboard() {
 }
 
 export default AdminDashboard;
-

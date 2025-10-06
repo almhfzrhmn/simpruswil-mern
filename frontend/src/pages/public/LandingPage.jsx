@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { roomsAPI } from "../../services/api";
-import SplitText from "../../components/ui/SplitText";
-import RippleGrid from "../../components/ui/RippleGrid";
 
 // Mock Link component for demonstration
 const Link = ({ to, children, className, ...props }) => (
@@ -16,9 +14,6 @@ const handleScroll = (e, targetId) => {
   if (targetElement) {
     targetElement.scrollIntoView({ behavior: "smooth", block: "start" });
   }
-};
-const handleAnimationComplete = () => {
-  console.log("");
 };
 
 // Custom SVG Icons to replace Heroicons
@@ -175,14 +170,19 @@ const LandingPage = () => {
     const fetchRooms = async () => {
       try {
         const response = await roomsAPI.getRooms({ isActive: true });
-        setRooms(response.data.data);
+        const roomsData = response?.data?.data;
+        setRooms(Array.isArray(roomsData) ? roomsData : []);
       } catch (error) {
         console.error("Error fetching rooms:", error);
+        setRooms([]);
       } finally {
         setLoading(false);
       }
     };
-    fetchRooms();
+
+    // Add a small delay to prevent race conditions
+    const timer = setTimeout(fetchRooms, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   const features = [
@@ -334,54 +334,17 @@ const LandingPage = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="relative min-h-screen overflow-hidden flex items-center">
-        <div className="absolute top-0 left-0 right-0 bottom-0 w-full h-full">
-          <RippleGrid
-            enableRainbow={false}
-            gridColor="#ffffff"
-            rippleIntensity={0.05}
-            gridSize={10}
-            gridThickness={15}
-            mouseInteraction={true}
-            mouseInteractionRadius={1.2}
-            opacity={0.8}
-          />
-        </div>
+      <section className="relative min-h-screen overflow-hidden flex items-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+        <div className="absolute top-0 left-0 right-0 bottom-0 w-full h-full bg-gradient-to-br from-blue-100/30 via-transparent to-indigo-100/30"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center">
             <div className="mb-8 animate-fade-in">
               {/* Animated Text */}
               <h1 className="text-5xl md:text-7xl font-bold text-center text-gray-900 leading-normal">
-                <SplitText
-                  text="Selamat Datang di SIMPRUSWIL"
-                  className="text-7xl font-semibold text-center leading-normal"
-                  delay={100}
-                  duration={0.6}
-                  ease="power3.out"
-                  splitType="chars"
-                  from={{ opacity: 0, y: 40 }}
-                  to={{ opacity: 1, y: 0 }}
-                  threshold={0.1}
-                  rootMargin="-100px"
-                  textAlign="center"
-                  onLetterAnimationComplete={handleAnimationComplete}
-                />
+                Selamat Datang di SIMPRUSWIL
               </h1>
               <p className="text-lg md:text-xl font-medium text-center text-gray-700 leading-normal">
-                <SplitText
-                  text="Sistem Informasi Peminjaman Ruang Pustaka Wilayah"
-                  className="text-xl font-bold text-center leading-normal text-black"
-                  delay={50}
-                  duration={0.2}
-                  ease="power3.out"
-                  splitType="chars"
-                  from={{ opacity: 0, y: 40 }}
-                  to={{ opacity: 1, y: 0 }}
-                  threshold={0.1}
-                  rootMargin="-100px"
-                  textAlign="center"
-                  onLetterAnimationComplete={handleAnimationComplete}
-                />
+                Sistem Informasi Peminjaman Ruang Pustaka Wilayah
               </p>
             </div>
             <p className="text-md md:text-2xl text-gray-600 mb-12 max-w-4xl mx-auto leading-relaxed">
@@ -479,7 +442,7 @@ const LandingPage = () => {
               <div className="col-span-full flex justify-center py-12">
                 <LoadingSpinner />
               </div>
-            ) : rooms.length === 0 ? (
+            ) : !rooms || rooms.length === 0 ? (
               <div className="col-span-full text-center py-12">
                 <p className="text-gray-600 text-lg">
                   Tidak ada ruangan tersedia saat ini.
